@@ -7,7 +7,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { imageBase64, mimeType } = req.body
     if (!imageBase64) return res.status(400).json({ error: 'No image' })
 
-    const apiKey = process.env.ANTHROPIC_API_KEY || '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'
+    const apiKey = process.env.ANTHROPIC_API_KEY
+    if (!apiKey) {
+      return res.status(500).json({ error: 'Server not configured' })
+    }
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
