@@ -1,6 +1,4 @@
-import type { NextApiRequest, NextApiResponse } from 'next'
-
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
   try {
@@ -8,9 +6,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!imageBase64) return res.status(400).json({ error: 'No image' })
 
     const apiKey = process.env.ANTHROPIC_API_KEY
-    if (!apiKey) {
-      return res.status(500).json({ error: 'Server not configured' })
-    }
+    if (!apiKey) return res.status(500).json({ error: 'Server not configured' })
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -29,15 +25,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             source: { type: 'base64', media_type: mimeType || 'image/jpeg', data: imageBase64 },
           }, {
             type: 'text',
-            text: 'Extract ONLY this JSON from the work order image: {"jobNumber":"", "location":"", "serviceLine":"", "urgency":"Normal", "scope":"", "techRate":41, "helperRate":21, "tripCharge":30}',
+            text: 'Extract ONLY this JSON: {"jobNumber":"", "location":"", "serviceLine":"", "urgency":"Normal", "scope":"", "techRate":41, "helperRate":21, "tripCharge":30}',
           }],
         }],
       }),
     })
 
     if (!response.ok) {
-      const error = await response.text()
-      console.error('Claude error:', error)
       return res.status(500).json({ error: 'Claude API error' })
     }
 
@@ -49,12 +43,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const jsonMatch = text.match(/\{[\s\S]*\}/)
       if (jsonMatch) extracted = JSON.parse(jsonMatch[0])
     } catch (e) {
-      console.log('Parse error, using defaults')
+      console.log('Parse error')
     }
 
     res.json(extracted)
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ error: 'Failed to process image' })
+    res.status(500).json({ error: 'Failed to process' })
   }
 }
